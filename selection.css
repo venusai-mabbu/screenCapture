@@ -1,0 +1,26 @@
+/* Selection Box Style */
+#qrc-selection {
+    /* Define the look of the area being selected */
+    border: 3px dashed #10b981; /* Tailwind green-500 */
+    background-color: rgba(16, 185, 129, 0.15); /* Semi-transparent background */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+    cursor: crosshair;
+}
+
+/* Status Message Style */
+#qrc-status {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2147483647; 
+    padding: 10px 15px;
+    background-color: #10b981; /* Tailwind green-500 */
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: none;
+    transition: opacity 0.3s ease-in-out;
+}

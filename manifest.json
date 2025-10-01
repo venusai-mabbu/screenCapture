@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Quick Region Capture (Ctrl+Click)",
+  "version": "1.2",
+  "description": "Capture a region of the screen by pressing Ctrl and dragging the mouse. The image is automatically downloaded.",
+
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["selection.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
