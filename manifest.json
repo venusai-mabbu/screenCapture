@@ -5,18 +5,21 @@
   "description": "Capture a region of the screen by pressing Ctrl and dragging the mouse. The image is automatically downloaded.",
 
   "action": {
-    "default_popup": "popup.html"
   },
   "permissions": [
     "tabs",
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
   },
   "content_scripts": [
     {
