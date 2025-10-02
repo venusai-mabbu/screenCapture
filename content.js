@@ -161,8 +161,9 @@ function cropAndDownload(dataUrl, x1, y1, x2, y2) {
 
         // 5. Download
         const croppedDataUrl = canvas.toDataURL("image/png");
+        alert("Screenshot captured and downloaded!");
         downloadImage(croppedDataUrl);
-        
+       
         showStatus("Screenshot downloaded!", 1500);
     };
     
