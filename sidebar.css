@@ -23,6 +23,7 @@ body {
   margin: 0;
 }
 
+
 .controls button {
   margin-left: 5px;
   padding: 6px 10px;
@@ -35,6 +36,32 @@ body {
 .controls button:hover {
   background: #ddd;
 }
+#info{
+  font-weight: bold;
+  font-size: larger;
+  font-display: block;
+  cursor: pointer;
+}
+#info>img{
+  display: none;
+}
+
+#info:hover>img{
+  display: block;
+  position: absolute;
+  right: 0;
+  background: #333;
+  color: white;
+  padding: 5px;
+  border-radius: 5px;
+  font-size: small;
+  width: max-content;
+  height: 300px;
+  max-width: 300px;
+  z-index: 1000;
+}
+
+
 
 .dark .controls button:hover {
   background: #333;
