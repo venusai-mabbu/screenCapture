@@ -6,21 +6,19 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.action.onClicked.addListener((tab) => {
   chrome.sidePanel.open({ tabId: tab.id });
 });
-// Listener for messages from content scripts (content.js)
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-   if (msg.type === "getSelection") {
-    chrome.scripting.executeScript(
-      {
-        target: { tabId: sender.tab.id },
-        func: () => window.getSelection().toString()
-      },
-      (results) => {
-        sendResponse({ text: results[0].result });
+    if (msg.type === "saveSelection") {
+        chrome.storage.local.get(["tasks"], (result) => {
+            const existingTasks = result.tasks || [];
+            existingTasks.push(msg.text);
+            chrome.storage.local.set({ tasks: existingTasks }, () => {
+                sendResponse({ status: "saved" });
+            });
+        });
+        return true; // Keep channel open for sendResponse
       }
-    );
-    return true; // Keeps message channel open
-  }
-  
+
   // Check if the action is to initiate a capture
   else if (msg.action === "captureVisibleTab") {
     
