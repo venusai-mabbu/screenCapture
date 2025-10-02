@@ -7,7 +7,7 @@
   "action": {
   },
   "permissions": [
-    "tabs",
+    "tabs","storage",
     "activeTab",
     "scripting",
     "sidePanel"
@@ -24,7 +24,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["cropper.js","extract.js","sidebar.js"],
       "css": ["selection.css"],
       "run_at": "document_idle"
     }
