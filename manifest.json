@@ -5,6 +5,10 @@
   "description": "Capture a region of the screen by pressing Ctrl and dragging the mouse. The image is automatically downloaded.",
 
   "action": {
+    
+    "default_icon": {
+      "32": "icons/icon.png"
+    }
   },
   "permissions": [
     "tabs","storage",

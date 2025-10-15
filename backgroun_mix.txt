@@ -1,0 +1,194 @@
+// Listen for extension installation
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("ScreenCapture installed!");
+});
+
+// Icon paths
+const DEFAULT_ICON = {
+  "16": "icons/icon.png",
+  "32": "icons/icon.png",
+  "48": "icons/icon.png",
+  "128": "icons/icon.png"
+};
+
+const ACTIVE_ICON = {
+  "16": "icons/icon_active.png",
+  "32": "icons/icon_active.png",
+  "48": "icons/icon_active.png",
+  "128": "icons/icon_active.png"
+};
+
+// Track global active state
+let isActive = false;
+
+// Update icon for all tabs
+function updateIconForAllTabs() {
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach((t) => {
+      chrome.action.setIcon({ path: isActive ? ACTIVE_ICON : DEFAULT_ICON, tabId: t.id });
+    });
+  });
+}
+
+// Toggle extension state
+chrome.action.onClicked.addListener((tab) => {
+  if (!tab?.id) return;
+
+  isActive = !isActive;
+  console.log("Extension is now", isActive ? "active" : "inactive");
+
+  updateIconForAllTabs();
+
+  // Inject or remove content script listeners dynamically
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach((t) => {
+      chrome.scripting.executeScript({
+        target: { tabId: t.id },
+        func: toggleListeners,
+        args: [isActive]
+      });
+    });
+  });
+
+  // Open side panel as before
+  chrome.sidePanel.open({ tabId: tab.id });
+});
+
+// Function executed in content scripts to attach/remove listeners
+function toggleListeners(active) {
+  // --- Text selection listener ---
+  if (active) {
+    window.__textMouseUpListener = (e) => {
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const text = selection.toString().trim();
+        if (!text) return;
+        chrome.runtime.sendMessage({ type: "saveSelection", text });
+      }, 50);
+    };
+    document.addEventListener("mouseup", window.__textMouseUpListener);
+
+    // --- Cropping mouse listeners ---
+    window.__cropMouseDown = window.__cropMouseDown || function(e) {
+      if (!e.ctrlKey || e.button !== 0) return;
+      if (!window.__selectionBox) {
+        const box = document.createElement("div");
+        box.id = "qrc-selection";
+        box.style.cssText = `position:absolute; z-index:2147483647; pointer-events:none; display:none;`;
+        document.body.appendChild(box);
+        window.__selectionBox = box;
+      }
+      window.__isSelecting = true;
+      window.__startX = e.clientX + window.scrollX;
+      window.__startY = e.clientY + window.scrollY;
+      const box = window.__selectionBox;
+      box.style.left = `${window.__startX}px`;
+      box.style.top = `${window.__startY}px`;
+      box.style.width = "0px";
+      box.style.height = "0px";
+      box.style.display = "block";
+    };
+
+    window.__cropMouseMove = window.__cropMouseMove || function(e) {
+      if (!window.__isSelecting) return;
+      const endX = e.clientX + window.scrollX;
+      const endY = e.clientY + window.scrollY;
+      const box = window.__selectionBox;
+      const x = Math.min(window.__startX, endX);
+      const y = Math.min(window.__startY, endY);
+      const w = Math.abs(window.__startX - endX);
+      const h = Math.abs(window.__startY - endY);
+      box.style.left = `${x}px`;
+      box.style.top = `${y}px`;
+      box.style.width = `${w}px`;
+      box.style.height = `${h}px`;
+    };
+
+    window.__cropMouseUp = window.__cropMouseUp || function(e) {
+      if (!window.__isSelecting) return;
+      window.__isSelecting = false;
+      const box = window.__selectionBox;
+      if (box) box.style.display = "none";
+      const endX = e.clientX + window.scrollX;
+      const endY = e.clientY + window.scrollY;
+      if (Math.abs(window.__startX - endX) < 10 || Math.abs(window.__startY - endY) < 10) return;
+
+      // Request screenshot from background
+      chrome.runtime.sendMessage({ action: "captureVisibleTab" }, (res) => {
+        if (res && res.screenshot) {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const scaleX = img.width / window.innerWidth;
+            const scaleY = img.height / window.innerHeight;
+            canvas.width = Math.abs(window.__startX - endX) * scaleX;
+            canvas.height = Math.abs(window.__startY - endY) * scaleY;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(
+              img,
+              Math.min(window.__startX, endX) * scaleX,
+              Math.min(window.__startY, endY) * scaleY,
+              canvas.width,
+              canvas.height,
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+            const croppedDataUrl = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = croppedDataUrl;
+            link.download = `Screenshot-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            alert("Screenshot captured and downloaded!");
+          };
+          img.src = res.screenshot;
+        }
+      });
+    };
+
+    document.addEventListener("mousedown", window.__cropMouseDown);
+    document.addEventListener("mousemove", window.__cropMouseMove);
+    document.addEventListener("mouseup", window.__cropMouseUp);
+
+  } else {
+    // Remove listeners when inactive
+    if (window.__textMouseUpListener) {
+      document.removeEventListener("mouseup", window.__textMouseUpListener);
+      window.__textMouseUpListener = null;
+    }
+    if (window.__cropMouseDown) {
+      document.removeEventListener("mousedown", window.__cropMouseDown);
+      document.removeEventListener("mousemove", window.__cropMouseMove);
+      document.removeEventListener("mouseup", window.__cropMouseUp);
+    }
+  }
+}
+
+// Handle messages from background (like saving text or capturing)
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "saveSelection") {
+    chrome.storage.local.get(["tasks"], (result) => {
+      const existingTasks = result.tasks || [];
+      existingTasks.push(msg.text);
+      chrome.storage.local.set({ tasks: existingTasks }, () => {
+        sendResponse({ status: "saved" });
+      });
+    });
+    return true;
+  }
+
+  else if (msg.action === "captureVisibleTab") {
+    chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" }, (dataUrl) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ error: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ screenshot: dataUrl });
+      }
+    });
+    return true;
+  }
+});

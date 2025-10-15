@@ -1,33 +1,27 @@
-function getSelectedContent() {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-        const selectedText = selection.toString().trim();
-        if (selectedText.length > 0) return selectedText;
-    }
-    return null;
-}
+// extract.js
 
-// Listen for text selection
-document.addEventListener("mouseup", () => {
-    setTimeout(() => {
+let textMouseUpListener = null;
+
+function toggleExtractListener(active) {
+  if (active) {
+    textMouseUpListener = () => {
+      setTimeout(() => {
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
-
-        // Extract only plain text (no HTML)
         const text = selection.toString().trim();
         if (!text) return;
+        chrome.runtime.sendMessage({ type: "saveSelection", text });
+      }, 50);
+    };
+    document.addEventListener("mouseup", textMouseUpListener);
+  } else {
+    if (textMouseUpListener) {
+      document.removeEventListener("mouseup", textMouseUpListener);
+      textMouseUpListener = null;
+    }
+  }
+}
 
-        // Send selected plain text to background script to save
-        chrome.runtime.sendMessage(
-            { type: "saveSelection", text },
-            (response) => {
-                if (chrome.runtime.lastError) {
-                    console.error("Error sending message:", chrome.runtime.lastError.message);
-                } else if (response && response.status === "saved") {
-                    console.log("Selection saved:", text);
-                }
-            }
-        );
-    }, 50);
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.action === "toggleListeners") toggleExtractListener(msg.active);
 });
-
