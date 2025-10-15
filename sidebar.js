@@ -17,6 +17,7 @@ function loadData() {
         if (isDark) document.body.classList.add("dark");
         renderTasks();
     });
+
 }
 
 // Save tasks to chrome.storage
@@ -35,15 +36,12 @@ function renderTasks() {
         dragHandle.className = "drag-handle";
         dragHandle.textContent = "☰";
 
+        // Task text span
         const textSpan = document.createElement("span");
-        textSpan.className = "task-text";
-        textSpan.contentEditable = "true";
+        textSpan.className = "task-text collapsible"; // add collapsible class
         textSpan.textContent = task;
-        textSpan.addEventListener("input", () => {
-            tasks[index] = textSpan.textContent.trim();
-            saveTasks();
-        });
 
+        // Delete button
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "delete-btn";
         deleteBtn.textContent = "✕";
@@ -53,6 +51,7 @@ function renderTasks() {
             renderTasks();
         });
 
+        // Append elements
         li.appendChild(dragHandle);
         li.appendChild(textSpan);
         li.appendChild(deleteBtn);
@@ -69,8 +68,15 @@ function renderTasks() {
             tasks = newTasks;
             saveTasks();
         });
+
+        // 🔽 Expand/Collapse toggle event
+        textSpan.addEventListener("click", () => {
+            textSpan.classList.toggle("expanded");
+        });
     });
 }
+
+
 
 // Add task function
 function addTask(val) {
@@ -137,16 +143,37 @@ downloadBtn.addEventListener("click", () => {
         alert("No tasks to download!");
         return;
     }
-    let content = "Task List\n\n";
+
+    // Start Word-compatible structure
+    let content = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+          xmlns:w='urn:schemas-microsoft-com:office:word'
+          xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset="utf-8"><title>Task List</title></head><body>
+    <h2 style="text-align:center;">Task List</h2>
+    <div style="font-family: Consolas, monospace; font-size: 14px; line-height: 1.6;">
+    `;
+
     tasks.forEach((task, i) => {
-        content += `${i + 1}. ${task}\n`;
+        content += `
+            <p style="margin-bottom: 20px;">
+                <strong>${i + 1}.</strong> ${task}
+            </p>
+        `;
     });
+
+    content += "</div></body></html>";
+
+    // Create and trigger download as Word doc
     const blob = new Blob([content], { type: "application/msword" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "tasks.doc";
     link.click();
 });
+
+
+
 
 // Add task from content script
 function addTaskFromContent(val) {

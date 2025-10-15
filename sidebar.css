@@ -50,13 +50,9 @@ body {
   display: block;
   position: absolute;
   right: 0;
-  background: #333;
-  color: white;
-  padding: 5px;
   border-radius: 5px;
-  font-size: small;
-  width: max-content;
-  height: 300px;
+  /* width: max-content;*/
+  height: 300px; 
   max-width: 300px;
   z-index: 1000;
 }
@@ -117,7 +113,7 @@ ul {
 
 li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 8px;
   margin-bottom: 6px;
@@ -144,9 +140,11 @@ li.dragging {
 .task-text {
   flex: 1;
   outline: none;
+  text-align: justify;
 }
 
 .delete-btn {
+  
   margin-left: 10px;
   background: #dc3545;
   color: white;
@@ -159,4 +157,20 @@ li.dragging {
 
 .delete-btn:hover {
   background: #b52a37;
+}
+
+.collapsible {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;   /* Show only 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.collapsible.expanded {
+  -webkit-line-clamp: unset; /* Expand fully */
+  overflow: visible;
 }
